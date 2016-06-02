@@ -1,6 +1,12 @@
+require 'rails'
 require 'graphql'
 require 'graphql/relay'
-require 'rails'
+require 'graphiql/rails'
 
+require 'graphql/rails/version'
+require 'graphql/rails/dsl'
 require 'graphql/rails/engine'
+require 'graphql/rails/config'
+require 'graphql/rails/types'
 require 'graphql/rails/schema'
+require 'graphql/rails/operations'

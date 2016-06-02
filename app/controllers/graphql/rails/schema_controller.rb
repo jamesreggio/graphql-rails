@@ -1,21 +1,25 @@
-class GraphQL::Rails::APIController < ApplicationController
+#TODO
+class GraphQL::Rails::SchemaController < ActionController::Base
+  # TODO: This may be superfluous.
   rescue_from GraphQL::ParseError, :with => :invalid_request
 
   def execute
     query_string = params[:query]
     query_variables = to_hash(params[:variables])
+    # TODO: Detect and integrate CanCan.
     ability = Ability.new(current_user)
     render json: schema.execute(
       query_string,
       variables: query_variables,
-      context: {:ability => ability}
+      context: {:ability => ability},
+      debug: true
     )
   end
 
   private
 
   def schema
-    @schema ||= GraphQL::Schema.new(query: QueryType)
+    GraphQL::Rails::Schema.instance
   end
 
   def to_hash(param)

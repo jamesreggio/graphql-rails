@@ -1,5 +1,11 @@
-Rails.application.routes.draw do
-  # TODO: Support all verbs
-  # TODO: Load path from configuration
-  post '/api/graph' => 'graphql/rails/api#execute'
+module GraphQL
+  module Rails
+    Engine.routes.draw do
+      if Rails.config.graphiql
+        mount GraphiQL::Rails::Engine => '/', :graphql_path => :self
+      end
+
+      post '/' => 'schema#execute'
+    end
+  end
 end

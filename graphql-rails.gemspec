@@ -17,5 +17,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'rails', '~> 4'
   s.add_dependency 'graphql', '~> 0.13'
   s.add_dependency 'graphql-relay', '~> 0.9'
+  # s.add_dependency 'graphiql-rails', '~> 1.2'
   s.add_development_dependency 'sqlite3'
 end
