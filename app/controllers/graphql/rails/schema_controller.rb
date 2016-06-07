@@ -1,40 +1,59 @@
-#TODO
-class GraphQL::Rails::SchemaController < ActionController::Base
-  # TODO: This may be superfluous.
-  rescue_from GraphQL::ParseError, :with => :invalid_request
+module GraphQL
+  module Rails
+    class SchemaController < ActionController::Base
+      include ControllerExtensions
+      rescue_from Exception, :with => :internal_error
+      rescue_from GraphQL::ParseError, :with => :invalid_query
+      rescue_from JSON::ParserError, :with => :invalid_variables
 
-  def execute
-    query_string = params[:query]
-    query_variables = to_hash(params[:variables])
-    # TODO: Detect and integrate CanCan.
-    ability = Ability.new(current_user)
-    render json: schema.execute(
-      query_string,
-      variables: query_variables,
-      context: {:ability => ability},
-      debug: true
-    )
-  end
+      def execute
+        query_string = params[:query]
+        query_variables = to_hash(params[:variables])
+        render json: Schema.instance.execute(
+          query_string,
+          variables: query_variables,
+          context: context,
+          debug: true
+        )
+      end
 
-  private
+      private
 
-  def schema
-    GraphQL::Rails::Schema.instance
-  end
+      def context
+        @context ||= {}
+      end
 
-  def to_hash(param)
-    if param.blank?
-      {}
-    elsif param.is_a?(String)
-      JSON.parse(param)
-    else
-      param
+      def to_hash(param)
+        if param.blank?
+          {}
+        elsif param.is_a?(String)
+          JSON.parse(param)
+        else
+          param
+        end
+      end
+
+      def render_error(status, message)
+        render json: {
+          :errors => [{:message => message}],
+        }, :status => status
+      end
+
+      def invalid_request(message)
+        render_error 400, message
+      end
+
+      def invalid_query
+        invalid_request 'Unable to parse query'
+      end
+
+      def invalid_variables
+        invalid_request 'Unable to parse variables'
+      end
+
+      def internal_error
+        render_error 500, 'Internal error'
+      end
     end
-  end
-
-  def invalid_request
-    render json: {
-      :errors => [{:message => 'Unable to parse query'}]
-    }, :status => 400
   end
 end

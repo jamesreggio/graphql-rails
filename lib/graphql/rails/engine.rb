@@ -11,44 +11,56 @@ module GraphQL
     class Engine < ::Rails::Engine
       isolate_namespace GraphQL::Rails
 
-      initializer 'graphql-rails' do |app|
+      initializer 'graphql-rails.autoload', :before => :set_autoload_paths do |app|
+        # Even though we aren't using symbolic autoloading of operations, they
+        # must be included in autoload_paths in order to be unloaded during
+        # reload operations.
         @graph_path = app.root.join('app', 'graph')
+        app.config.autoload_paths += [
+          @graph_path.join('types'),
+          @graph_path.join('operations'),
+        ]
+      end
 
-        # Initialize logger.
-        # TODO: Fix tagging issues.
-        logger = ActiveSupport::TaggedLogging.new(::Rails.logger.clone)
-        logger.push_tags 'graphql'
+      initializer 'graphql-rails.logger', :after => :initialize_logger do |app|
+        logger = ::Rails.logger.clone
+        logger.class_eval do
+          def exception(e)
+            begin
+              error "#{e.class.name} (#{e.message}):"
+              error "  #{e.backtrace.join("\n  ")}"
+            rescue
+            end
+          end
+        end
         Rails.logger = logger
         Rails.logger.debug 'Initialized logger'
+      end
 
-        # Load extensions.
+      initializer 'graphql-rails.extensions', :after => :load_config_initializers do |app|
+        # These depend upon a loaded Rails app, so we load them dynamically.
         extensions = File.join(File.dirname(__FILE__), 'extensions', '*.rb')
         Dir[extensions].each do |file|
           require file
         end
-
-        # Watch for changes to the /app/graph directory.
-        if Rails.config.autoload
-          dirs = {@graph_path.to_s => [:rb]}
-          checker = ActiveSupport::FileUpdateChecker.new([], dirs) do
-            Rails.logger.debug 'Detected changes to /app/graph directory'
-            reload!
-          end
-          ActionDispatch::Reloader.to_prepare do
-            checker.execute_if_updated
-          end
-        end
-
-        # Perform initial load of files under the /app/graph directory.
-        reload!
       end
 
-      # TODO: Assess whether changes to a model class requires Types to be invalidated.
+      initializer 'graphql-rails.prepare', :before => :add_to_prepare_blocks do
+        # The block executes in the context of the reloader, so we have to
+        # preserve a reference to the engine instance.
+        engine = self
+        config.to_prepare_blocks.push -> do
+          engine.reload!
+        end
+      end
+
       def reload!
+        Types.clear
         Schema.clear
-        Dir[@graph_path.join('**', '*.rb')].each do |file|
+        Rails.logger.debug 'Loading operations'
+        Dir[@graph_path.join('operations', '**', '*.rb')].each do |file|
           Rails.logger.debug "Loading file: #{file}"
-          load file
+          require_dependency file
         end
       end
     end

@@ -18,7 +18,8 @@ module GraphQL
       end
 
       def instance
-        #TODO: Support max_depth and types.
+        # TODO: Support max_depth and types.
+        # TODO: Sweep available options and expose in config.
         @schema ||= GraphQL::Schema.new begin
           TYPES.reduce({}) do |schema, type|
             fields = @fields[type]
@@ -28,6 +29,9 @@ module GraphQL
                 description "Root #{type.to_s} for this schema"
                 fields.each do |value|
                   field value.name, field: value
+                end
+                if Rails.config.global_ids && type == :query
+                  field :node, field: NodeIdentification.field
                 end
               end
             end

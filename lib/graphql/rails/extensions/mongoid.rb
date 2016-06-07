@@ -1,23 +1,56 @@
-# TODO: Limit to one ORM, then support multiple ORMs.
 module GraphQL
   module Rails
     if Rails.config.mongoid
+      Rails.logger.debug 'Loading Mongoid extensions'
+
+      GraphQL::Relay::BaseConnection.register_connection_implementation(
+        ::Mongoid::Relations::Targets::Enumerable,
+        GraphQL::Relay::RelationConnection
+      )
+
       module Mongoid
-        Rails.logger.debug 'Loading Mongoid extensions'
+        extend self
 
-        Types.add_type ::Mongoid::Boolean, Boolean
-        Types.add_type BSON::ObjectId, String
-        Types.add_type DateTime, String
-        Types.add_type Object, String
-        Types.add_type Hash, String
+        NAMESPACE = 'MG'
 
-        Types.add_builder do |type|
-          next unless type.included_modules.include?(::Mongoid::Document)
+        def clear
+          @types = nil
+        end
+
+        def resolve(type)
+          types[type] || build_type(type)
+        end
+
+        def lookup(type_name, id)
+          return if Types.use_namespaces? && !type_name.starts_with?(NAMESPACE)
+          types.each_pair do |type, graph_type|
+            return type.find(id) if graph_type.name == type_name
+          end
+          nil
+        end
+
+        private
+
+        def types
+          @types ||= {
+            ::Mongoid::Boolean => GraphQL::BOOLEAN_TYPE,
+            BSON::ObjectId => GraphQL::STRING_TYPE,
+          }
+        end
+
+        def build_type(type)
+          return nil unless type.included_modules.include?(::Mongoid::Document)
           Rails.logger.debug "Building Mongoid::Document type: #{type.name}"
 
           # TODO: Support parent types/interfaces.
-          GraphQL::ObjectType.define do
-            name type.name
+          type_name = to_name(type)
+          types[type] = GraphQL::ObjectType.define do
+            name type_name
+
+            if Rails.config.global_ids
+              interfaces [NodeIdentification.interface]
+              global_id_field :id
+            end
 
             type.fields.each_value do |field_value|
               field field_value.name do
@@ -29,8 +62,9 @@ module GraphQL
             type.relations.each_value do |relationship|
               # TODO: Add polymorphic support.
               if relationship.polymorphic?
-                msg = "Skipping polymorphic relationship: #{relationship.name}"
-                Rails.logger.warn msg
+                Rails.logger.warn(
+                  "Skipping polymorphic relationship: #{relationship.name}"
+                )
                 next
               end
 
@@ -47,11 +81,16 @@ module GraphQL
           end
         end
 
-        GraphQL::Relay::BaseConnection.register_connection_implementation(
-          ::Mongoid::Relations::Targets::Enumerable,
-          GraphQL::Relay::RelationConnection
-        )
+        def to_name(type)
+          if Types.use_namespaces?
+            NAMESPACE + type.name
+          else
+            type.name
+          end
+        end
       end
+
+      Types.add_extension Mongoid
     end
   end
 end
