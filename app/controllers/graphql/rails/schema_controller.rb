@@ -55,7 +55,9 @@ module GraphQL
         invalid_request 'Unable to parse variables'
       end
 
-      def internal_error
+      def internal_error(e)
+        Rails.logger.error 'Unexpected exception during execution'
+        Rails.logger.exception e
         render_error 500, 'Internal error'
       end
     end

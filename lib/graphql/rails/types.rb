@@ -57,11 +57,23 @@ module GraphQL
         extensions.push extension
       end
 
-      # Convert a type or field name to a string with the correct convention,
+      # Convert a type name to a string with the correct convention,
       # applying an optional namespace.
-      def to_name(name, namespace = '')
-        return namespace + to_name(name) unless namespace.blank?
+      def to_type_name(name, namespace = '')
+        return namespace + to_type_name(name) unless namespace.blank?
         if Rails.config.camel_case
+          name.to_s.camelize(:upper)
+        else
+          name.to_s
+        end
+      end
+
+      # Convert a field name to a string with the correct convention.
+      def to_field_name(name)
+        # camelize strips leading underscores, which is undesirable.
+        if name.to_s.starts_with?('_')
+          "_#{to_field_name(name.to_s[1..-1])}"
+        elsif Rails.config.camel_case
           name.to_s.camelize(:lower)
         else
           name.to_s

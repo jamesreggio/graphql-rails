@@ -61,7 +61,7 @@ module GraphQL
 
           # Build and cache the GraphQL type.
           # TODO: Map type inheritance to GraphQL interfaces.
-          type_name = Types.to_name(type.name, namespace)
+          type_name = Types.to_type_name(type.name, namespace)
           types[type] = GraphQL::ObjectType.define do
             name type_name
 
@@ -74,7 +74,8 @@ module GraphQL
             # Add each field from the document.
             # TODO: Support field exclusion and renaming.
             type.fields.each_value do |field_value|
-              field Types.to_name(field_value.name) do
+              field Types.to_field_name(field_value.name) do
+                property field_value.name.to_sym
                 type -> { Types.resolve(field_value.type) }
                 description field_value.label unless field_value.label.blank?
               end
@@ -91,11 +92,11 @@ module GraphQL
               end
 
               if relationship.many?
-                connection Types.to_name(relationship.name) do
+                connection Types.to_field_name(relationship.name) do
                   type -> { Types.resolve(relationship.klass).connection_type }
                 end
               else
-                field Types.to_name(relationship.name) do
+                field Types.to_field_name(relationship.name) do
                   type -> { Types.resolve(relationship.klass) }
                 end
               end

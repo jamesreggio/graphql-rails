@@ -32,7 +32,7 @@ module GraphQL
       #   end
       def self.query(hash, &block)
         hash = extract_pair(hash)
-        Rails.logger.debug "Adding query: #{to_name(hash[:name])}"
+        Rails.logger.debug "Adding query: #{Types.to_field_name(hash[:name])}"
 
         definition = QueryDefinition.new(self)
         definition.run(&block)
@@ -58,7 +58,7 @@ module GraphQL
 
         def name(name)
           @name = name
-          @field.name = Types.to_name(name)
+          @field.name = Types.to_field_name(name)
         end
 
         def type(type)
@@ -72,7 +72,7 @@ module GraphQL
 
         def argument(name, type, required = false)
           argument = ::GraphQL::Argument.new
-          argument.name = Types.to_name(name)
+          argument.name = Types.to_field_name(name)
           argument.type = Types.resolve(type, required == :required)
           @field.arguments[argument.name] = argument
         end
