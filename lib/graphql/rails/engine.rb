@@ -11,10 +11,10 @@ module GraphQL
     class Engine < ::Rails::Engine
       isolate_namespace GraphQL::Rails
 
+      # Even though we aren't using symbolic autoloading of operations, they
+      # must be included in autoload_paths in order to be unloaded during
+      # reload operations.
       initializer 'graphql-rails.autoload', :before => :set_autoload_paths do |app|
-        # Even though we aren't using symbolic autoloading of operations, they
-        # must be included in autoload_paths in order to be unloaded during
-        # reload operations.
         @graph_path = app.root.join('app', 'graph')
         app.config.autoload_paths += [
           @graph_path.join('types'),
@@ -22,6 +22,7 @@ module GraphQL
         ]
       end
 
+      # Extend the Rails logger with a facility for logging exceptions.
       initializer 'graphql-rails.logger', :after => :initialize_logger do |app|
         logger = ::Rails.logger.clone
         logger.class_eval do
@@ -37,14 +38,16 @@ module GraphQL
         Rails.logger.debug 'Initialized logger'
       end
 
+      # Extensions depend upon a loaded Rails app, so we load them dynamically.
       initializer 'graphql-rails.extensions', :after => :load_config_initializers do |app|
-        # These depend upon a loaded Rails app, so we load them dynamically.
         extensions = File.join(File.dirname(__FILE__), 'extensions', '*.rb')
         Dir[extensions].each do |file|
           require file
         end
       end
 
+      # Hook into Rails reloading in order to clear state from internal
+      # stateful modules and reload operations from the Rails app.
       initializer 'graphql-rails.prepare', :before => :add_to_prepare_blocks do
         # The block executes in the context of the reloader, so we have to
         # preserve a reference to the engine instance.
@@ -54,6 +57,7 @@ module GraphQL
         end
       end
 
+      # Clear state and load operations from the Rails app.
       def reload!
         Types.clear
         Schema.clear

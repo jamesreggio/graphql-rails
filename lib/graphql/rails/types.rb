@@ -1,8 +1,11 @@
 module GraphQL
   module Rails
+    # Type system responsible for resolving GraphQL types.
+    # Delegates creation of GraphQL types to ORM-specific extensions.
     module Types
       extend self
 
+      # Clear internal state, probably due to a Rails reload.
       def clear
         @types = nil
         extensions.each do |extension|
@@ -11,23 +14,25 @@ module GraphQL
       end
 
       # Resolve an arbitrary type to a GraphQL type.
+      # Lists can be specified with single-element arrays; for example:
+      # [String] resolves to a list of GraphQL::STRING_TYPE objects.
       def resolve(type, required = false)
         if type.nil?
-          raise 'Cannot resolve nil type.'
+          raise 'Cannot resolve nil type'
         elsif required
           resolve(type).to_non_null_type
         elsif type.is_a?(GraphQL::BaseType)
           type
         elsif type.is_a?(Array)
           unless type.length == 1
-            raise 'Lists must be specified with single-element arrays.'
+            raise 'Lists must be specified with single-element arrays'
           end
           resolve(type.first).to_list_type
         elsif types.include?(type)
           resolve(types[type])
         else
           resolve(try_extensions(:resolve, type) || begin
-            # TODO: Remove this hack.
+            # TODO: Decide whether to use String as a fallback, or raise.
             Rails.logger.warn "Unable to resolve type: #{type.name}"
             String
           end)
@@ -52,6 +57,17 @@ module GraphQL
         extensions.push extension
       end
 
+      # Convert a type or field name to a string with the correct convention,
+      # applying an optional namespace.
+      def to_name(name, namespace = '')
+        return namespace + to_name(name) unless namespace.blank?
+        if Rails.config.camel_case
+          name.to_s.camelize(:lower)
+        else
+          name.to_s
+        end
+      end
+
       private
 
       # Default mapping of built-in scalar types to GraphQL types.
@@ -74,6 +90,7 @@ module GraphQL
         }
       end
 
+      # List of registered extensions.
       def extensions
         @extensions ||= []
       end

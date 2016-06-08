@@ -3,6 +3,8 @@ module GraphQL
     if Rails.config.cancan
       Rails.logger.debug 'Loading CanCan extensions'
 
+      # Implement methods from CanCan::ControllerAdditions in Operations.
+      # http://www.rubydoc.info/github/ryanb/cancan/CanCan/ControllerAdditions
       Operations.class_eval do
         extend Forwardable
         def_delegators :current_ability, :can?, :cannot?
@@ -26,7 +28,7 @@ module GraphQL
           begin
             @authorized = true
             current_ability.authorize!(*args)
-          rescue CanCan::AccessDenied
+          rescue ::CanCan::AccessDenied
             raise 'You are not authorized to perform this operation'
           end
         end
@@ -36,10 +38,12 @@ module GraphQL
         end
 
         def current_user
-          ctx[:current_user]
+          context[:current_user]
         end
       end
 
+      # Make the current_user available during GraphQL execution via the
+      # operation context object.
       ControllerExtensions.add do
         before_filter do
           context[:current_user] = current_user
