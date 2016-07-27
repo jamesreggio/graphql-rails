@@ -18,7 +18,7 @@ module GraphQL
           end
         end
 
-        def skip_authorization_check(*args)
+        def self.skip_authorization_check(*args)
           self.before_filter(*args) do |instance|
             instance.instance_variable_set(:@authorized, true)
           end

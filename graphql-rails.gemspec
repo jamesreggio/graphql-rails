@@ -5,6 +5,7 @@ require 'graphql/rails/version'
 Gem::Specification.new do |s|
   s.name        = 'graphql-rails'
   s.version     = GraphQL::Rails::VERSION
+  s.license     = 'MIT'
   s.authors     = ['James Reggio']
   s.email       = ['james.reggio@gmail.com']
   s.homepage    = 'https://github.com/jamesreggio/graphql-rails'
@@ -16,7 +17,7 @@ Allows you to specify GraphQL queries and mutations as though they were
 controller actions. Automatically maps Mongoid models to GraphQL types.
 Seamlessly integrates with CanCan.
   EOM
-  s.license     = 'MIT'
+  s.required_ruby_version = '>= 2.1.0'
 
   s.files       = Dir['{app,config,lib}/**/*', 'LICENSE']
   s.required_ruby_version = '>= 2.1.0'

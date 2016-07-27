@@ -48,6 +48,7 @@ module GraphQL
       private
 
       # DSL for query definition.
+      # TODO: Support resolve-only blocks.
       class QueryDefinition < DSL
         attr_reader :field
 

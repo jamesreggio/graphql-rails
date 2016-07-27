@@ -48,6 +48,7 @@ module GraphQL
         # mappings for common built-in scalar types.
         def types
           @types ||= {
+            Boolean => GraphQL::BOOLEAN_TYPE,
             ::Mongoid::Boolean => GraphQL::BOOLEAN_TYPE,
             BSON::ObjectId => GraphQL::STRING_TYPE,
           }

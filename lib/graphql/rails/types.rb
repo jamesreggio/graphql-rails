@@ -86,7 +86,6 @@ module GraphQL
       def types
         @types ||= {
           String => GraphQL::STRING_TYPE,
-          Boolean => GraphQL::BOOLEAN_TYPE,
 
           Fixnum => GraphQL::INT_TYPE,
           Integer => GraphQL::INT_TYPE,

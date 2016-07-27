@@ -13,6 +13,8 @@ module GraphQL
         instance_eval(&block)
       end
 
+      private
+
       def method_missing(method, *args, &block)
         begin
           @self.send(method, *args, &block)
