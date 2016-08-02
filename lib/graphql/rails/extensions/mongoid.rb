@@ -92,13 +92,23 @@ module GraphQL
                 next
               end
 
+              # Check that relationship has a valid type.
+              begin
+                klass = relationship.klass
+              rescue
+                Rails.logger.warn(
+                  "Skipping relationship with invalid class: #{relationship.name}"
+                )
+                next
+              end
+
               if relationship.many?
                 connection Types.to_field_name(relationship.name) do
-                  type -> { Types.resolve(relationship.klass).connection_type }
+                  type -> { Types.resolve(klass).connection_type }
                 end
               else
                 field Types.to_field_name(relationship.name) do
-                  type -> { Types.resolve(relationship.klass) }
+                  type -> { Types.resolve(klass) }
                 end
               end
             end

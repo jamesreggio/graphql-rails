@@ -61,11 +61,10 @@ module GraphQL
       # applying an optional namespace.
       def to_type_name(name, namespace = '')
         return namespace + to_type_name(name) unless namespace.blank?
-        if Rails.config.camel_case
-          name.to_s.camelize(:upper)
-        else
-          name.to_s
-        end
+        name = name.to_s
+        name = name.camelize(:upper) if Rails.config.camel_case
+        name = name.gsub(/\W/, '_')
+        name
       end
 
       # Convert a field name to a string with the correct convention.
