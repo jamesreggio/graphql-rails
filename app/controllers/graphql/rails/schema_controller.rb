@@ -16,8 +16,7 @@ module GraphQL
         render json: Schema.instance.execute(
           params[:query],
           variables: to_hash(params[:variables]),
-          context: context,
-          debug: Rails.config.debug
+          context: context
         )
       end
 
