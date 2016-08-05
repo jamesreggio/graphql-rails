@@ -11,6 +11,7 @@ require 'graphql/rails/engine'
 
 require 'graphql/rails/dsl'
 require 'graphql/rails/types'
+require 'graphql/rails/fields'
 require 'graphql/rails/schema'
 require 'graphql/rails/callbacks'
 require 'graphql/rails/operations'

@@ -62,7 +62,7 @@ module GraphQL
       def self.mutation(hash, &block)
         hash = extract_pair(hash)
         unless hash[:type].is_a?(Hash)
-          raise 'Mutations must be specified with Hash results'
+          raise 'Mutation must be specified with a Hash result type'
         end
         Rails.logger.debug "Adding mutation: #{Types.to_field_name(hash[:name])}"
 
@@ -112,11 +112,11 @@ module GraphQL
         end
 
         def resolve(&block)
-          field.resolve = -> (obj, args, ctx) do
+          @field.resolve = -> (obj, args, ctx) do
             # Instantiate the Operations class with state on this query.
             instance = @klass.new({
               op: :query, name: @name, type: @type,
-              obj: obj, args: args, ctx: ctx, context: ctx
+              obj: obj, args: Fields.new(args), ctx: ctx, context: ctx
             })
 
             begin
@@ -165,8 +165,9 @@ module GraphQL
         end
 
         def field
+          # Build input object according to mutation specification.
           input = @input
-          input.name = "#{@field.name}Input"
+          input.name = "#{@name.to_s.camelize(:upper)}Input"
           input.description = "Generated input type for #{@field.name}"
           input.arguments['clientMutationId'] = ::GraphQL::Argument.define do
             name 'clientMutationId'
@@ -174,8 +175,9 @@ module GraphQL
             description 'Unique identifier for client performing mutation'
           end
 
+          # Build compound output object according to mutation specification.
           output = @output
-          output.name = "#{@field.name}Output"
+          output.name = "#{@name.to_s.camelize(:upper)}Output"
           output.description = "Generated output type for #{@field.name}"
           output.fields['clientMutationId'] = ::GraphQL::Field.define do
             name 'clientMutationId'
@@ -192,11 +194,11 @@ module GraphQL
         end
 
         def resolve(&block)
-          field.resolve = -> (obj, args, ctx) do
+          @field.resolve = -> (obj, args, ctx) do
             # Instantiate the Operations class with state on this query.
             instance = @klass.new({
               op: :mutation, name: @name, type: @type,
-              obj: obj, args: args[:input], ctx: ctx, context: ctx
+              obj: obj, args: Fields.new(args[:input]), ctx: ctx, context: ctx
             })
 
             begin
@@ -204,7 +206,18 @@ module GraphQL
               instance.run_callbacks(:perform_operation) do
                 # Call out to the app-defined resolver.
                 result = instance.instance_eval(&block)
-                result[:clientMutationId] = args[:clientMutationId]
+
+                # Transform the result keys to the expected convention.
+                unless result.is_a?(::Hash)
+                  raise 'Mutation must resolve to a Hash result'
+                end
+
+                result = result.inject({
+                  'clientMutationId' => args['clientMutationId']
+                }) do |hash, (key, value)|
+                  hash[Types.to_field_name(key)] = value
+                  hash
+                end
                 ::OpenStruct.new(result)
               end
             rescue => e
