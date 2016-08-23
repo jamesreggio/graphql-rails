@@ -8,6 +8,7 @@ module GraphQL
       # Clear internal state, probably due to a Rails reload.
       def clear
         @types = nil
+        @explicit = nil
         extensions.each do |extension|
           extension.clear
         end
@@ -37,6 +38,12 @@ module GraphQL
             String
           end)
         end
+      end
+
+      # Array of types that should be explicitly included in the schema.
+      # Useful for ensuring that interface implmentations are included.
+      def explicit
+        @explicit ||= []
       end
 
       # Lookup an arbitrary object from its GraphQL type name and ID.

@@ -26,6 +26,7 @@ module GraphQL
         @schema ||= GraphQL::Schema.new begin
           TYPES.reduce({
             max_depth: Rails.config.max_depth,
+            types: Types.explicit,
           }) do |schema, type|
             fields = @fields[type]
             unless fields.empty?

@@ -21,10 +21,11 @@ module GraphQL
       # Define a query operation.
       # Definitions should have the following form:
       #
-      #   query :find_cats => [Cat] do
+      #   query :find_cats => [AnimalInterface] do
       #     description 'This query returns a list of Cat models'
       #     argument :age, Integer, :required
       #     argument :breed, String
+      #     uses CatType
       #     resolve do
       #       raise 'Too old' if args[:age] > 20
       #       Cat.find(age: args[:age], breed: args[:breed])
@@ -92,6 +93,10 @@ module GraphQL
         def name(name)
           @name = name
           @field.name = Types.to_field_name(name)
+        end
+
+        def uses(type)
+          Types.explicit.push Types.resolve(type)
         end
 
         def type(type)
