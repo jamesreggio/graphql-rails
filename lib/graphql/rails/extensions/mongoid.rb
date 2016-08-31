@@ -104,10 +104,12 @@ module GraphQL
 
               if relationship.many?
                 connection Types.to_field_name(relationship.name) do
+                  property relationship.name.to_sym
                   type -> { Types.resolve(klass).connection_type }
                 end
               else
                 field Types.to_field_name(relationship.name) do
+                  property relationship.name.to_sym
                   type -> { Types.resolve(klass) }
                 end
               end
