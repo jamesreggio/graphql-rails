@@ -66,10 +66,14 @@ module GraphQL
           types[type] = GraphQL::ObjectType.define do
             name type_name
 
-            # Add the global node ID, if enabled.
+            # Add the global node ID, if enabled; otherwise, document ID.
             if Rails.config.global_ids
               interfaces [NodeIdentification.interface]
               global_id_field :id
+            else
+              field :id do
+                type -> { Types.resolve(BSON::ObjectId) }
+              end
             end
 
             # Add each field from the document.
