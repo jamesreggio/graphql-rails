@@ -47,6 +47,10 @@ module GraphQL
             schema
           end
         end
+        if Rails.config.global_ids
+          @schema.node_identification = NodeIdentification
+        end
+        @schema
       end
     end
   end
